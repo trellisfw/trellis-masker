@@ -1,0 +1,40 @@
+version: "3"
+
+services:
+  ##########################################
+  # Overrides for oada-core services:
+  ##########################################
+
+  # Add ourselves to yarn to do yarn install
+  yarn:
+    volumes:
+      - ./services-available/trellis-cb:/code/trellis-cb
+
+  # Add ourselves to admin container:
+  admin:
+    volumes:
+      - ./services-available/trellis-cb:/code/trellis-cb
+
+
+  ###############################################
+  # This service's definition:
+  ###############################################
+  trellis-cb:
+    depends_on:
+      - startup
+    build:
+      context: ./services-available/trellis-cb
+    container_name: trellis-cb
+    restart: always
+    networks:
+      - http_net
+      - startup_net
+      - arango_net
+    volumes:
+      - ./services-available/trellis-cb:/code/trellis-cb
+      - ./oada-core/libs:/code/libs
+      - ./oada-srvc-docker-config.js:/oada-srvc-docker-config.js
+    environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED
+      - NODE_ENV=${NODE_ENV:-development}
+      - DEBUG

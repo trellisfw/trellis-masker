@@ -1,0 +1,10 @@
+{
+  "name": "trellis-cb",
+  "version": "1.0.0",
+  "description": "Trellis microservice to sign, mask PII, and link documents",
+  "main": "index.ts",
+  "repository": "git@gitlab.com:qlevercompany/trellis/trellis-cb.git",
+  "author": "Nathan Givens <nate@qlever.io>",
+  "license": "MIT",
+  "private": true
+}
