@@ -10,7 +10,7 @@ import Bluebird from 'bluebird';
 Promise = <any>Bluebird;
 
 // Types
-import { OadaDoc } from './types/OadaDoc';
+import { OadaAudit } from './types/OadaDoc';
 import { OadaCache } from './types/OadaCache.js';
 import { AxiosResponse } from './node_modules/axios/index.js';
 import { Jobs } from './types/OadaJobs.js';
@@ -34,7 +34,7 @@ async function hashmap(resourceId: string, task: Object, conn: OadaCache) {
   if (vDoc.audits) {
     await Bluebird.map(Object.keys(vDoc.audits), async (auditId: string) => {
       debug(`Audit: ${auditId}`);
-      let audit: OadaDoc;
+      let audit: OadaAudit;
       try {
         audit = await conn
           .get({ path: `/resources/${resourceId}/audits/${auditId}` })
@@ -44,16 +44,12 @@ async function hashmap(resourceId: string, task: Object, conn: OadaCache) {
         throw 'Failed to get OADA document';
       }
 
-      // TODO make sure path to location is correct
-      const link = `${TRELLIS_URL}/resouces/${resourceId}/audits/${auditId}`;
-      audit['location']['link'] = link;
-      const { hash } = signatures.hashJSON(audit);
-      trace(`Audit ${auditId} hash calculated as ${hash}`);
-      audit['location'] = { hash, link };
+      maskAudit(resourceId, auditId, audit);
 
       trace(`Posting masked audit ${auditId}`);
+      let masked;
       try {
-        var masked = await conn
+        masked = await conn
           .post({
             path: `/resources`,
             data: JSON.stringify(audit)
@@ -72,6 +68,16 @@ async function hashmap(resourceId: string, task: Object, conn: OadaCache) {
       });
     });
   }
+}
+
+// Mask documents
+function maskAudit(resourceId: string, auditId: string, audit: OadaAudit) {
+  const link = `${TRELLIS_URL}/resouces/${resourceId}/audits/${auditId}`;
+  audit['organization']['location']['link'] = link;
+  const { hash } = signatures.hashJSON(audit);
+  trace(`Audit ${auditId} hash: ${hash}`);
+  audit['organization']['location'] = { hash, link };
+  return audit;
 }
 
 // Instantiate service
