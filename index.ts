@@ -68,15 +68,18 @@ async function hashmap(resourceId: string, task: Object, conn: OadaCache) {
       });
     });
   }
+  // TODO add almost identical flow for cois
 }
 
 // Mask documents
 function maskAudit(resourceId: string, auditId: string, audit: OadaAudit) {
   const link = `${TRELLIS_URL}/resouces/${resourceId}/audits/${auditId}`;
   audit['organization']['location']['link'] = link;
+  audit['operation']['location']['link'] = link;
   const { hash } = signatures.hashJSON(audit);
   trace(`Audit ${auditId} hash: ${hash}`);
   audit['organization']['location'] = { hash, link };
+  audit['operation']['location']['link'] = { hash, link };
   return audit;
 }
 
