@@ -8,33 +8,35 @@ services:
   # Add ourselves to yarn to do yarn install
   yarn:
     volumes:
-      - ./services-available/trellis-cb:/code/trellis-cb
+      - ./services-available/trellis-masker:/code/trellis-masker
 
   # Add ourselves to admin container:
   admin:
     volumes:
-      - ./services-available/trellis-cb:/code/trellis-cb
+      - ./services-available/trellis-masker:/code/trellis-masker
 
 
   ###############################################
   # This service's definition:
   ###############################################
-  trellis-cb:
+  trellis-masker:
     depends_on:
       - startup
     build:
-      context: ./services-available/trellis-cb
-    container_name: trellis-cb
+      context: ./services-available/trellis-masker
+    container_name: trellis-masker
     restart: always
     networks:
       - http_net
       - startup_net
       - arango_net
     volumes:
-      - ./services-available/trellis-cb:/code/trellis-cb
+      - ./services-available/trellis-masker:/code/trellis-masker
       - ./oada-core/libs:/code/libs
       - ./oada-srvc-docker-config.js:/oada-srvc-docker-config.js
     environment:
       - NODE_TLS_REJECT_UNAUTHORIZED
       - NODE_ENV=${NODE_ENV:-development}
       - DEBUG
+      - domain
+      - token
