@@ -26,6 +26,7 @@ services:
     restart: always
     networks:
       - http_net
+      - startup_net
     volumes:
       - ./services-available/trellis-masker:/code/trellis-masker
       - ./oada-core/libs:/code/libs
