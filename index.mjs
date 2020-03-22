@@ -1,7 +1,6 @@
 import fs from 'fs';
 import Promise from 'bluebird';
-import _ from 'lodash'; // Lazy, lodash isn't really needed anymore
-import pdfjs from 'pdfjs';
+import _ from 'lodash';
 import debug from 'debug';
 import { JobQueue } from '@oada/oada-jobs';
 import ml from '@trellisfw/masklink';
@@ -9,6 +8,7 @@ import tsig from '@trellisfw/signatures';
 import uuid from 'uuid';
 import jsonpointer from 'json-pointer';
 
+import makeAndPostPdfFromMaskedVdoc from './pdfgen.js';
 import config from './config.js';
 
 const error = debug('trellis-masker:error');
@@ -70,6 +70,10 @@ async function jobCallback(id, task, con) {
   // 5: link the audit/coi mask and pdf back to their corresponding vdoc instead of relying on oada-ensure
   // 6: create the masks link in original to point to new vdoc
 
+  // Get a resource to hold the new vdoc: we need this so we can link _meta/vdoc in all the stuff we make
+  const newvdocid = 'resources/'+uuid.v4();
+  trace('New vdocid will be '+newvdocid);
+
   const newvdoc = {
     // will add audits, cois, pdf below
     unmask: { _id: unmasked_vdoc._id }
@@ -125,6 +129,15 @@ async function jobCallback(id, task, con) {
       }).catch(e => { throw new Error(`#maskALink: Failed to maskAndSignRemoteResourceAsNewResource for url ${domain}/${restomask._id}.  Error was: `+JSON.stringify(e,false,'  ')); });
       trace(`#maskALink: successfully created mask resource for ${DOMAIN}/${restomask._id} as new resource id ${maskid}`);
 
+      // Link back to the soon-to-exist vdocid in _meta/vdoc
+      await con.put({
+        path: `/${maskid}/_meta`,
+        data: { vdoc: { _id: `/${newvdocid}` } },
+        headers: { 'content-type': 'application/json' },
+      }).catch(e => { throw new Error(`Failed to put link to vdoc (${maskid}) in _meta/vdoc for masked item ${newvdocid}.  Error was: `+JSON.stringify(e,false,'  ')); });
+      trace(`Successfully put /${maskid}/_meta/vdoc as link to parent ${newvdocid}`);
+
+
       // Put a link to this new masked thing at the same place in the newvdoc as it was in the unmasked one:
       trace(`#maskALink: putting link to new mask into new vdoc at same place as original: ${curpath} => { _id: ${maskid} }`);
       jsonpointer.set(newvdoc,curpath,{ _id: maskid });
@@ -139,24 +152,65 @@ async function jobCallback(id, task, con) {
   const masked_link_paths = await Promise.reduce(keys, async (acc, k) => {
     return acc.concat(await maskALink(k,unmasked_vdoc,''));
   },[]);
-  newvdoc['masked-link-paths'] = masked_link_paths;
-  newvdoc['masked-keys-list'] = KEYS_TO_MASK;
   info(`Finished creating mask resources.  Made a masked version of the following paths: `, masked_link_paths);
-  
-  // Now, we need to create a PDF document for the new vdoc
-  error(`------>>>>>>> DO NOT FORGET <<<<<<<<<<<<<-------------: You are not making a new PDF yet, you just linked the old one`);
-  newvdoc.pdf = makeAndPostPdfFromMaskedVdoc(newvdoc);
 
-  // POST the new vdoc to /resources:
-  const newvdocid = await con.post({
-    path: '/resources',
+  //-------------------------------------------------------
+  // PDF Generation:
+  //-------------------------------------------------------
+
+  // Now, we need to create a PDF document for the new vdoc
+  trace('Creating new PDF');
+  newvdoc.pdf = await makeAndPostPdfFromMaskedVdoc({ vdoc: newvdoc, con, domain: DOMAIN, token: TOKEN });
+  // Put the same name in _meta as the original pdf
+  if (unmasked_vdoc.pdf) {
+    const unmasked_vdocmeta = await con.get({path: `/${unmasked_vdoc.pdf._id}/_meta`}).then(r => r.data)
+      .catch(e => { throw new Error(`Could not get /${unmasked_vdoc.pdf._id}/_meta for pdf filename.  Error was: ${e.toString()}`) });
+    if (unmasked_vdocmeta.filename) {
+      trace(`Putting original PDF filename ${unmasked_vdocmeta.filename} to new pdf as well`);
+      await con.put({
+        path: `/${newvdoc.pdf._id}/_meta`,
+        data: { filename: unmasked_vdocmeta.filename },
+        headers: { 'content-type': 'application/json' }
+      }).catch(e => { error('ERROR: Failed to put filename onto pdf.  Error was: ', e )});
+    }
+  }
+  trace('PDF creation complete');
+  // Link back to the soon-to-exist vdocid in _meta/vdoc
+  await con.put({
+    path: `/${newvdoc.pdf._id}/_meta`,
+    data: { vdoc: { _id: `/${newvdocid}` } },
+    headers: { 'content-type': 'application/json' },
+  }).catch(e => { throw new Error(`Failed to put link to vdoc in _meta/vdoc for new pdf.  Error was: `+JSON.stringify(e,false,'  ')); });
+  trace(`Successfully put /${newvdoc.pdf._id}/_meta/vdoc as link to parent ${newvdocid}`);
+
+
+
+  //--------------------------------------------------
+  // Upload th final vdoc
+  //--------------------------------------------------
+  
+  // PUT the new vdoc to /resources at the already-generated UUID:
+  await con.put({
+    path: `/${newvdocid}`,
     data: newvdoc,
     headers: { 'content-type': 'application/vnd.trellisfw.vdoc.1+json' },
   }).then(r=>r.headers['content-location'].slice(1))
   .catch(e => { throw new Error('Failed to POST new vdoc to /resources.  Error was: '+JSON.stringify(e,false,'  ')); });
   trace(`Successfully posted new vdoc to /resources at id ${newvdocid}`);
 
-  // Put up the new vdoc to /bookmarks/trellisfw/documents
+  // Save the info about the mask in _meta:
+  await con.put({
+    path: `/${newvdocid}/_meta`,
+    data: { 
+      'masked-link-paths': masked_link_paths,
+      'masked-keys-list': KEYS_TO_MASK,
+    },
+    headers: { 'content-type': 'application/vnd.trellisfw.vdoc.1+json' },
+  }).catch(e => { throw new Error('Failed to PUT vdoc _meta to save masked paths.  Error was: '+JSON.stringify(e,false,'  ')); });
+  trace(`Successfully saved new vdoc meta with masked link paths at /${newvdocid}/_meta`);
+
+
+  // POST the new vdoc to /bookmarks/trellisfw/documents
   const newvdocid_indocuments = await con.post({
     path: '/bookmarks/trellisfw/documents',
     data: { _id: newvdocid },
@@ -179,15 +233,6 @@ async function jobCallback(id, task, con) {
   return { success: true };
 }
 
-
-// Give this thing the actual vdoc, not the ID to it.  It will return a link to the new PDF which you 
-// can then put in newvdoc.pdf as newvdoc.pdf = makeAndPostPdfFromMaskedVdoc()
-function makeAndPostPdfFromMaskedVdoc(vdocvdoc) {
- 
-  
-
-  return { _id: pdfid };
-}
 
 (async () => {
   try {
