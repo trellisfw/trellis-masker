@@ -140,7 +140,7 @@ async function jobCallback(id, task, con) {
 
       // Put a link to this new masked thing at the same place in the newvdoc as it was in the unmasked one:
       trace(`#maskALink: putting link to new mask into new vdoc at same place as original: ${curpath} => { _id: ${maskid} }`);
-      jsonpointer.set(newvdoc,curpath,{ _id: maskid });
+      jsonpointer.set(newvdoc,curpath,{ _id: maskid, _rev: 1 });
       // Keep track of all the things that were masked for later in case that is useful
       masked_link_paths.push({ path: curpath, maskid, maskedpaths: paths });
     }
@@ -213,7 +213,7 @@ async function jobCallback(id, task, con) {
   // POST the new vdoc to /bookmarks/trellisfw/documents
   const newvdocid_indocuments = await con.post({
     path: '/bookmarks/trellisfw/documents',
-    data: { _id: newvdocid },
+    data: { _id: newvdocid, _rev: 1 },
     headers: { 'content-type': 'application/vnd.trellisfw.vdoc.1+json' },
   }).then(r=>r.headers['content-location'].slice(1))
   .catch(e => { throw new Error(`${respath}: could not post new masked vdoc to /bookmarks/trellisfw/documents.  Error was: `+JSON.stringify(e,false,'  ')) });
