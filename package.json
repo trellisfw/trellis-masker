@@ -20,7 +20,7 @@
     "@oada/oada-cache": "^3.1.2",
     "@oada/oada-jobs": "github:oada/oada-jobs",
     "@std/esm": "^0.26.0",
-    "@trellisfw/masklink": "^1.0.1",
+    "@trellisfw/masklink": "^1.0.5",
     "@trellisfw/signatures": "github:trellisfw/trellisfw-signatures",
     "bluebird": "^3.7.2",
     "debug": "^4.1.1",
