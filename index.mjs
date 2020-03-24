@@ -132,7 +132,7 @@ async function jobCallback(id, task, con) {
       // Link back to the soon-to-exist vdocid in _meta/vdoc
       await con.put({
         path: `/${maskid}/_meta`,
-        data: { vdoc: { _id: `/${newvdocid}` } },
+        data: { vdoc: { _id: `${newvdocid}` } },
         headers: { 'content-type': 'application/json' },
       }).catch(e => { throw new Error(`Failed to put link to vdoc (${maskid}) in _meta/vdoc for masked item ${newvdocid}.  Error was: `+JSON.stringify(e,false,'  ')); });
       trace(`Successfully put /${maskid}/_meta/vdoc as link to parent ${newvdocid}`);
