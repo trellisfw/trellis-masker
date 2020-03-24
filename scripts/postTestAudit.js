@@ -81,7 +81,7 @@ await con.get({path: `/${vdocid}`})
 
   // Put the vdoc into /trellisfw/documents 
   const bookmarkspath = `/bookmarks/trellisfw/documents/${vdocid.replace(/^resources\//,'')}`; // use same id as vdoc, just without the resources/ to simplify debugging
-  const link = { _id: vdocid };
+  const link = { _id: vdocid, _rev: 1 };
   console.log('PUT-ing document to ', bookmarkspath, ', data = ', link);
   await con.put({
     path: bookmarkspath, 

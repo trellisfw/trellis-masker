@@ -110,7 +110,7 @@ async function makeAndPostPdfFromMaskedVdoc({vdoc, con, domain, token}) {
           tr.cell()
             .text('< MASKED >')
             .text('If you have permission, click here to verify', { 
-              link: 'https://trellisfw.github.com/reagan?trellis-mask='+querystring.escape(JSON.stringify(mask['trellis-mask'])),
+              link: 'https://trellisfw.github.io/reagan?trellis-mask='+querystring.escape(JSON.stringify(mask['trellis-mask'])),
               underline: true,
               color: "0x569cd6",
             });
@@ -137,7 +137,7 @@ async function makeAndPostPdfFromMaskedVdoc({vdoc, con, domain, token}) {
       doc.cell({ paddingBottom: 0.5*pdfjs.cm})
         .text(data.title+' - Full Signature and Data')
         .text('Click here to verify full resource if you have permission to it', {
-          link: 'https://trellisfw.github.com/reagan?masked-resource-url='+querystring.escape(`${DOMAIN}/${r.resourcePath}`),
+          link: 'https://trellisfw.github.io/reagan?masked-resource-url='+querystring.escape(`${DOMAIN}/${r.resourcePath}`),
           underline: true,
           color: "0x569cd6",
         });
