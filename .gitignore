@@ -1,41 +1,29 @@
-lib-cov
-*.seed
+node_modules
+package.lock
+
 *.log
-*.csv
-*.dat
-*.out
-*.pid
-*.gz
-*.swp
+.DS_Store
+.dccache
+.history
+.nvimlog
 
-pids
-logs
-results
-tmp
+# TypeScript
+dist
+*.tsbuildinfo
 
-# Build
-public/css/main.css
-
-# Coverage reports
-coverage
-
-# API keys and secrets
+# Docker overrides
+docker-compose.override.yml
 .env
 
-# Dependency directory
-node_modules
-bower_components
+# Ignore act stuff?
+.actrc
+act/
 
-# Editors
-.idea
-*.iml
-
-# OS metadata
-.DS_Store
-Thumbs.db
-
-# Ignore built ts files
-dist/**/*
-
-# ignore yarn.lock
-yarn.lock
+# yarn 2 stuff
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/versions
+.pnp.*
+# ignore sdk stuff
+.vim

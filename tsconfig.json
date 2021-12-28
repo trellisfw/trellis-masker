@@ -1,0 +1,25 @@
+{
+  "extends": "@tsconfig/node16",
+  "compilerOptions": {
+    "target": "esnext",
+    "module" :"esnext",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "declaration": true,
+    "sourceMap": true,
+    "strict": true,
+    "importsNotUsedAsValues": "error",
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "exclude": [ "test/**/*", "dist" ]
+}

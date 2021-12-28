@@ -1,39 +1,24 @@
-version: "3"
-
 services:
-  ##########################################
-  # Overrides for oada-core services:
-  ##########################################
-
-  # Add ourselves to yarn to do yarn install
-  yarn:
-    volumes:
-      - ./services-available/trellis-masker:/code/trellis-masker
-
-  # Add ourselves to admin container:
-  admin:
-    volumes:
-      - ./services-available/trellis-masker:/code/trellis-masker
-
-
-  ###############################################
-  # This service's definition:
-  ###############################################
-  trellis-masker:
+  service:
     build:
-      context: ./services-available/trellis-masker
-    container_name: trellis-masker
-    restart: always
-    networks:
-      - http_net
-      - startup_net
+      context: .
+    image: trellisfw/trellis-masker
+    restart: unless-stopped
+    # Map your private key file to /private_key.jwk in the container for signing
     volumes:
-      - ./services-available/trellis-masker:/code/trellis-masker
-      - ./oada-core/libs:/code/libs
-      - ./oada-srvc-docker-config.js:/oada-srvc-docker-config.js
+      ./keys/private_key.jwk:/private_key.jwk
     environment:
       - NODE_TLS_REJECT_UNAUTHORIZED
       - NODE_ENV=${NODE_ENV:-development}
-      - DEBUG=${DEBUG:-*info*,*warn*,*error*}
-      - domain
-      - token
+      - DEBUG=${DEBUG-*:error,*:warn,*:info}
+      # Connect to host if DOMAIN not set.
+      # You should really not rely on this though. Set DOMAIN.
+      - DOMAIN=${DOMAIN:-host.docker.internal}
+      # TODO: Nicer way to deal with tokens?
+      - TOKEN=${TOKEN:-god}
+      # Make this the same as where you mapped it into the container above
+      - PRIVATEJWK=${PRIVATEJWK:-/private_key.jwk}
+      - SIGNERNAME
+      - SIGNERURL
+      - MASKPATH
+      - MASKKEY
