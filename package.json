@@ -41,7 +41,7 @@
     "debug": "^4.3.3",
     "deep-equal": "^2.0.5",
     "dotenv": "^10.0.0",
-    "json-pointer": "^0.6.1",
+    "json-pointer": "^0.6.2",
     "sprintf-js": "^1.1.2"
   }
 }
